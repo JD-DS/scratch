@@ -1,0 +1,150 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+import spacy
+from sklearn.feature_extraction.text import CountVectorizer
+
+# Download required NLTK resources
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+# Load the English model for spaCy
+nlp = spacy.load("en_core_web_sm")
+
+# Initialize NLTK's lemmatizer
+lemmatizer = WordNetLemmatizer()
+
+# Sample DataFrame for analysis (replace this with your actual data)
+data = {'text': [
+    "This is an example text for analyzing the distribution of text lengths.",
+    "Here is another text example, shorter than the first one.",
+    "Text processing pipelines involve many steps such as tokenization and lemmatization.",
+    "In this case, we are analyzing text data distribution and summarization."
+]}
+
+df = pd.DataFrame(data)
+
+### Step 1: Analyze Text Length Distribution ###
+
+# Function to compute text lengths
+df['text_length'] = df['text'].apply(lambda x: len(x.split()))
+
+# Plot distribution of text lengths
+plt.figure(figsize=(10, 6))
+sns.histplot(df['text_length'], bins=10, kde=True)
+plt.title('Distribution of Text Lengths')
+plt.xlabel('Text Length (words)')
+plt.ylabel('Frequency')
+plt.show()
+
+# Boxplot for visualizing text length distribution
+plt.figure(figsize=(10, 6))
+sns.boxplot(df['text_length'])
+plt.title('Boxplot of Text Lengths')
+plt.xlabel('Text Length (words)')
+plt.show()
+
+### Step 2: Shortening Text Length without Loss of Information ###
+
+# Option 1: Remove Stopwords
+stop_words = set(stopwords.words('english'))
+
+def remove_stopwords(text):
+    words = word_tokenize(text.lower())
+    filtered_words = [word for word in words if word.isalpha() and word not in stop_words]
+    return ' '.join(filtered_words)
+
+df['text_no_stopwords'] = df['text'].apply(remove_stopwords)
+
+# Option 2: Lemmatization (reduce words to their base form)
+def lemmatize_text(text):
+    words = word_tokenize(text.lower())
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in words if word.isalpha()]
+    return ' '.join(lemmatized_words)
+
+df['text_lemmatized'] = df['text'].apply(lemmatize_text)
+
+# Option 3: Summarization (Simple summarization using word frequency)
+def simple_summarization(text, max_words=10):
+    # Create a word frequency table using CountVectorizer
+    vectorizer = CountVectorizer(stop_words='english')
+    word_count = vectorizer.fit_transform([text])
+    word_freq = np.array(word_count.sum(axis=0)).flatten()
+    
+    # Get the most frequent words
+    freq_words = np.argsort(word_freq)[-max_words:]
+    vocab = np.array(vectorizer.get_feature_names_out())[freq_words]
+    
+    # Reconstruct summary using the most frequent words
+    summary = ' '.join(vocab)
+    return summary
+
+df['text_summarized'] = df['text'].apply(simple_summarization)
+
+### Step 3: Analyze Text Lengths after Shortening ###
+
+# Analyzing length distribution after removing stopwords
+df['length_no_stopwords'] = df['text_no_stopwords'].apply(lambda x: len(x.split()))
+
+# Plot distribution after removing stopwords
+plt.figure(figsize=(10, 6))
+sns.histplot(df['length_no_stopwords'], bins=10, kde=True)
+plt.title('Distribution of Text Lengths (Without Stopwords)')
+plt.xlabel('Text Length (words)')
+plt.ylabel('Frequency')
+plt.show()
+
+# Analyzing length distribution after lemmatization
+df['length_lemmatized'] = df['text_lemmatized'].apply(lambda x: len(x.split()))
+
+# Plot distribution after lemmatization
+plt.figure(figsize=(10, 6))
+sns.histplot(df['length_lemmatized'], bins=10, kde=True)
+plt.title('Distribution of Text Lengths (Lemmatized)')
+plt.xlabel('Text Length (words)')
+plt.ylabel('Frequency')
+plt.show()
+
+# Analyzing length distribution after summarization
+df['length_summarized'] = df['text_summarized'].apply(lambda x: len(x.split()))
+
+# Plot distribution after summarization
+plt.figure(figsize=(10, 6))
+sns.histplot(df['length_summarized'], bins=10, kde=True)
+plt.title('Distribution of Text Lengths (Summarized)')
+plt.xlabel('Text Length (words)')
+plt.ylabel('Frequency')
+plt.show()
+
+# Display the processed dataframe with different text versions
+import ace_tools as tools; tools.display_dataframe_to_user(name="Text Processing Pipeline DataFrame", dataframe=df)
+
+
+
+
+
+Key Steps Explained:
+Text Length Analysis:
+
+Calculates the length of the text (in words) using the split() function, which splits the text by spaces. Visualizations (histogram and boxplot) help in understanding the text length distribution.
+Stopword Removal:
+
+Uses NLTK's built-in stopwords to filter out commonly used words that do not carry significant meaning in a sentence.
+Lemmatization:
+
+Applies NLTK's lemmatizer to reduce words to their base or root form, such as changing "running" to "run." This reduces the overall text length without significant information loss.
+Simple Summarization:
+
+Uses the most frequent words in the text to create a shortened version. This is a rudimentary method for summarization but can help reduce text length for exploratory analysis.
+Post-processing Analysis:
+
+After shortening the text, we again analyze the new distributions of text lengths after each operation (stopword removal, lemmatization, summarization) using histograms.
+Potential Improvements:
+You could use more advanced summarization models like transformers (e.g., BART, T5) for better text summarization.
+You could apply more nuanced lemmatization/stemming methods or other linguistic preprocessing techniques based on your dataset's complexity.
